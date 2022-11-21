@@ -14,13 +14,17 @@
       <h1>起落架状态{{ landinggear }}</h1>
 
       <div class="mui-input-row mui-input-range">
-        <label>Range</label>
+        <label>油门</label>
         <input type="range" min="0" max="100" />
       </div>
-      <div class="mui-switch">
-        <div class="mui-switch-handle"></div>
-      </div>
-
+      <br>
+      <br>
+      <div class="btnArea">
+        <div class="mui-switch mui-active">
+          <div class="mui-switch-handle"></div>
+        </div>
+        <button type="button" @click="importPlan" class="mui-btn mui-btn-primary">从simbrief导入Plan</button>
+    </div>
     </div>
     <div id="myMap" style="position:relative;width:100%;height:200px;"></div>
   </div>
@@ -100,7 +104,7 @@ export default {
       console.log("开始跟踪");
       this.userPin = new Microsoft.Maps.Pushpin(this.map.getCenter(), { visible: false });
       this.map.entities.push(this.userPin);
-      this.timer_location_update =window.setInterval(this.locationUpdated,500);
+      this.timer_location_update =window.setInterval(this.locationUpdated,1000);
       //Watch the users location.
       //this.watchId = navigator.geolocation.watchPosition(this.locationUpdated);
 
@@ -161,7 +165,29 @@ export default {
           timeout += 1;
         }, 2000);
       });
+    },
+
+    importPlan(){
+      mui.prompt('请输入simbrief用户名','deftext','Input user info',['true','false'],function(e){
+        if(e.index ==0){
+          mui.toast(e.value);
+          var api = "https://www.simbrief.com/api/xml.fetcher.php?username="+e.value+"&json=1";
+          axios
+          .get(api)
+          .then((res) => {
+            //请求成功的回调函数
+            debugger
+            mui.toast("出发地:"+res.data.origin.iata_code+"\n"+"经度："+res.data.origin.pos_lat+" 纬度："+res.data.origin.pos_long); 
+          })
+          .catch((err) => {
+            //请求失败的回调函数
+            //计划修改成ios7样式的弹窗提示
+            console.log(err);
+          });
     }
+        
+      },'div') 
+    } 
 
 
   },
@@ -208,6 +234,7 @@ export default {
     
   },
   mounted: function () {
+    mui('.mui-switch')['switch']();
     
     setInterval(() => {
       this.roll = 30 * Math.sin(this.counter / 10);
@@ -247,7 +274,7 @@ export default {
           //计划修改成ios7样式的弹窗提示
           console.log(err);
         });
-    }, 1000);
+    }, 100000);
     
   },
   beforeDestroy() {
@@ -264,5 +291,8 @@ export default {
 }
 .indicator-bg {
   background-color: grey;
+}
+.btnArea{
+  display: flex;
 }
 </style>
