@@ -104,26 +104,27 @@ export default {
       console.log("开始跟踪");
       this.userPin = new Microsoft.Maps.Pushpin(this.map.getCenter(), { visible: false });
       this.map.entities.push(this.userPin);
-      this.timer_location_update =window.setInterval(this.locationUpdated,1000);
+      this.timer_location_update =window.setInterval(this.locationUpdated(this.map),1000);
       //Watch the users location.
       //this.watchId = navigator.geolocation.watchPosition(this.locationUpdated);
 
     },
-    locationUpdated(){
+    locationUpdated(map){
       var that = this;
       var loc = new Microsoft.Maps.Location(
                     this.latitude,
                     this.longitude);
-        console.log(this.latitude);
-        console.log(this.longitude);
         
         //Update the user pushpin.
-        this.userPin.setLocation(loc);
+        // this.userPin.setLocation(loc);
         
-        this.userPin.setOptions({ visible: true,
-          icon: that.planeIcon,
-          anchor: new Microsoft.Maps.Point(12, 39)
+        // this.userPin.setOptions({ visible: true,
+        //   icon: that.planeIcon,
+        //   anchor: new Microsoft.Maps.Point(12, 39)
           
+        // });
+        that.createRotatedImagePushpin(loc,that.planeIcon,45,function(pin){
+          map.entities.push(pin);
         });
 
         //Center the map on the user's location.
@@ -166,7 +167,43 @@ export default {
         }, 2000);
       });
     },
+    createRotatedImagePushpin(location, url, rotationAngle, callback) {
+        var img = new Image();
+        img.onload = function () {
+            var c = document.createElement('canvas');
 
+            var rotationAngleRads = rotationAngle * Math.PI / 180;
+
+           //Calculate rotated image size.
+            c.width = Math.abs(Math.ceil(img.width * Math.cos(rotationAngleRads) + img.height * Math.sin(rotationAngleRads)));
+            c.height = Math.abs(Math.ceil(img.width * Math.sin(rotationAngleRads) + img.height * Math.cos(rotationAngleRads)));
+
+            var context = c.getContext('2d');
+
+            //Move to the center of the canvas.
+            context.translate(c.width / 2, c.height / 2);
+
+            //Rotate the canvas to the specified angle in degrees.
+            context.rotate(rotationAngleRads);
+
+            //Draw the image, since the context is rotated, the image will be rotated also.
+            context.drawImage(img, -img.width / 2, -img.height / 2);
+
+            var pin = new Microsoft.Maps.Pushpin(location, {
+                //Generate a base64 image URL from the canvas.
+                icon: c.toDataURL(),
+                anchor: new Microsoft.Maps.Point(c.width / 2, c.height / 2) //Anchor to center of image.
+            });
+
+            if (callback) {
+                callback(pin);
+            }
+        };
+
+        //Allow cross domain image editting.
+        img.crossOrigin = 'anonymous';
+        img.src = url;
+    },
     importPlan(){
       mui.prompt('请输入simbrief用户名','deftext','Input user info',['true','false'],function(e){
         if(e.index ==0){
