@@ -23,16 +23,17 @@
         <div class="mui-switch mui-active">
           <div class="mui-switch-handle"></div>
         </div>
-        <button type="button" @click="importPlan" class="mui-btn mui-btn-primary">从simbrief导入Plan</button>
+        <button id="importBtn" type="button" @click="importPlan" class="mui-btn mui-btn-primary">从simbrief导入Plan</button>
     </div>
     </div>
-    <div id="myMap" style="position:relative;width:100%;height:200px;"></div>
+    <div id="myMap" style="position:relative;width:100%;height:600px;"></div>
   </div>
 </template>
 
 <script>
 import axios from "axios";
 import plane from "./icons/plane.png"
+import simbrieficon from "./icons/simbrief.png"
 import {
   Airspeed,
   Attitude,
@@ -104,17 +105,18 @@ export default {
       console.log("开始跟踪");
       this.userPin = new Microsoft.Maps.Pushpin(this.map.getCenter(), { visible: false });
       this.map.entities.push(this.userPin);
-      this.timer_location_update =window.setInterval(this.locationUpdated(this.map),1000);
+      this.timer_location_update =window.setInterval(this.locationUpdated,1000,this.map);
       //Watch the users location.
       //this.watchId = navigator.geolocation.watchPosition(this.locationUpdated);
 
     },
     locationUpdated(map){
+      console.log("locationUpdated");
+      
       var that = this;
-      var loc = new Microsoft.Maps.Location(
-                    this.latitude,
-                    this.longitude);
-        
+      var loc = new Microsoft.Maps.Location(this.latitude,this.longitude);
+        console.log(this.latitude);
+        console.log(this.longitude);
         //Update the user pushpin.
         // this.userPin.setLocation(loc);
         
@@ -123,8 +125,9 @@ export default {
         //   anchor: new Microsoft.Maps.Point(12, 39)
           
         // });
-        that.createRotatedImagePushpin(loc,that.planeIcon,45,function(pin){
-          map.entities.push(pin);
+        
+        that.createRotatedImagePushpin(loc,that.planeIcon,360-that.heading,function(pin){
+          // map.entities.push(pin);
         });
 
         //Center the map on the user's location.
@@ -169,15 +172,19 @@ export default {
     },
     createRotatedImagePushpin(location, url, rotationAngle, callback) {
         var img = new Image();
+        var that = this;
+        
         img.onload = function () {
+            var canvasWidth = Math.max(img.width, img.height);
             var c = document.createElement('canvas');
-
+            c.width = canvasWidth;
+            c.height = canvasWidth
             var rotationAngleRads = rotationAngle * Math.PI / 180;
-
+            // console.load("rorateAngleRads")
            //Calculate rotated image size.
-            c.width = Math.abs(Math.ceil(img.width * Math.cos(rotationAngleRads) + img.height * Math.sin(rotationAngleRads)));
-            c.height = Math.abs(Math.ceil(img.width * Math.sin(rotationAngleRads) + img.height * Math.cos(rotationAngleRads)));
-
+            // c.width = Math.abs(Math.ceil(img.width * Math.cos(rotationAngleRads) + img.height * Math.sin(rotationAngleRads)));
+            // c.height = Math.abs(Math.ceil(img.width * Math.sin(rotationAngleRads) + img.height * Math.cos(rotationAngleRads)));
+            
             var context = c.getContext('2d');
 
             //Move to the center of the canvas.
@@ -187,16 +194,28 @@ export default {
             context.rotate(rotationAngleRads);
 
             //Draw the image, since the context is rotated, the image will be rotated also.
+            // context.drawImage(img, -c.height / 2, -c.width / 2);
             context.drawImage(img, -img.width / 2, -img.height / 2);
+            
 
-            var pin = new Microsoft.Maps.Pushpin(location, {
-                //Generate a base64 image URL from the canvas.
-                icon: c.toDataURL(),
-                anchor: new Microsoft.Maps.Point(c.width / 2, c.height / 2) //Anchor to center of image.
-            });
+            // context.drawImage(img,-img.width,-img.height);
+            
+            // var pin = new Microsoft.Maps.Pushpin(location, {
+            //     //Generate a base64 image URL from the canvas.
+            //     icon: c.toDataURL(),
+            //     anchor: new Microsoft.Maps.Point(c.width / 2, c.height / 2) //Anchor to center of image.
+            // });
+            
+            that.userPin.setLocation(location);
+            that.userPin.setOptions({ visible: true,
+              icon: c.toDataURL(),
+              anchor: new Microsoft.Maps.Point(c.width / 2, c.height / 2) //Anchor to center of image.
+          
+          });
+
 
             if (callback) {
-                callback(pin);
+                callback(that.userPin);
             }
         };
 
@@ -311,7 +330,7 @@ export default {
           //计划修改成ios7样式的弹窗提示
           console.log(err);
         });
-    }, 100000);
+    }, 1000);
     
   },
   beforeDestroy() {
@@ -331,5 +350,12 @@ export default {
 }
 .btnArea{
   display: flex;
+}
+#importBtn{
+  background: url("./icons/simbrief.png");
+  color: lightslategray
+}
+.bm_bottomRightOverlay{
+  display: none;
 }
 </style>
